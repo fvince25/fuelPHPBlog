@@ -11,6 +11,7 @@
  */
 
 use Fuel\Core\Controller_Template;
+use Fuel\Core\DB;
 use Fuel\Core\Input;
 use Fuel\Core\Presenter;
 use Fuel\Core\Response;
@@ -30,6 +31,16 @@ class Controller_Articles extends Controller_Template
 {
 
 
+    public function before() {
+
+        parent::before();
+
+        if (!Session::get('username')) {
+            Response::redirect('auth/login/');
+        }
+
+    }
+
     /**
      * La liste complète des articles
      *
@@ -39,15 +50,10 @@ class Controller_Articles extends Controller_Template
     public function action_index()
     {
 
-        if (Session::get('username')) {
-            $articles = Model_Article::find('all');
-            $data = array('articles' => $articles);
-            $this->template->title = 'Liste des Articles';
-            $this->template->content = View::forge('article/index', $data, false);
-        } else {
-            Response::redirect('auth/login/');
-        }
-
+        $articles = Model_Article::find('all');
+        $data = array('articles' => $articles);
+        $this->template->title = 'Liste des Articles';
+        $this->template->content = View::forge('article/index', $data, false);
 
     }
 
@@ -62,17 +68,26 @@ class Controller_Articles extends Controller_Template
     public function action_view($id)
     {
 
-        if (Session::get('username')) {
+        $article = Model_Article::find($id);
+        $data = array('article' => $article);
+        $this->template->title = $article->title;
+        $this->template->content = View::forge('article/view', $data, false);
 
-            $article = Model_Article::find($id);
-            $data = array('article' => $article);
-            $this->template->title = $article->title;
-            $this->template->content = View::forge('article/view', $data, false);
-        } else {
-            Response::redirect('auth/login/');
-        }
     }
 
+
+    /**
+     * La liste complète des articles
+     *
+     * @access  public
+     * @return  Response
+     */
+    public function action_ajax()
+    {
+
+        echo json_encode(array("result" => true));
+
+    }
     /**
      * L'édition d'un article, saisie + submit
      *
@@ -83,27 +98,22 @@ class Controller_Articles extends Controller_Template
     {
 
 
-        if (Session::get('username')) {
-            $Article = Model_Article::find($id);
-            if (Input::post('submit')) {
+        $Article = Model_Article::find($id);
+        if (Input::post('submit')) {
 
-                $Article->title = Input::post('title');
-                $Article->content = Input::post('content');
-                $Article->save();
+            $Article->title = Input::post('title');
+            $Article->content = Input::post('content');
+            $Article->save();
 
-                Session::set_flash('success', 'Article enregistré');
-                Response::redirect('articles/view/' . $id);
+            Session::set_flash('success', 'Article enregistré');
+            Response::redirect('articles/view/' . $id);
 
-            } else {
-
-
-                $data = array('article' => $Article);
-                $this->template->title = $Article->title;
-                $this->template->content = View::forge('article/edit', $data, false);
-            }
         } else {
-            Response::redirect('auth/login/');
 
+
+            $data = array('article' => $Article);
+            $this->template->title = $Article->title;
+            $this->template->content = View::forge('article/edit', $data, false);
         }
 
     }
@@ -117,31 +127,26 @@ class Controller_Articles extends Controller_Template
     public function action_new()
     {
 
+        if (Input::post('submit')) {
 
-        if (Session::get('username')) {
-            if (Input::post('submit')) {
+            $User = Model_User::find(Session::get('user_id'));
 
-                $User = Model_User::find(Session::get('user_id'));
+            $Article = new Model_Article();
+            $Article->title = Input::post('title');
+            $Article->content = addslashes(Input::post('content'));
+            $Article->user = $User;
+            $Article->save();
 
-                $Article = new Model_Article();
-                $Article->title = Input::post('title');
-                $Article->content = addslashes(Input::post('content'));
-                $Article->user = $User;
-                $Article->save();
+            $id = $Article->id;
 
-                $id = $Article->id;
+            Session::set_flash('success', 'Article crée');
+            Response::redirect('articles/view/' . $id);
 
-                Session::set_flash('success', 'Article crée');
-                Response::redirect('articles/view/' . $id);
-
-            } else {
-
-                $data = array();
-                $this->template->title = "Nouvel article";
-                $this->template->content = View::forge('article/new', $data, false);
-            }
         } else {
-            Response::redirect('auth/login/');
+
+            $data = array();
+            $this->template->title = "Nouvel article";
+            $this->template->content = View::forge('article/new', $data, false);
         }
 
     }
@@ -156,21 +161,14 @@ class Controller_Articles extends Controller_Template
     public function action_addComment($id)
     {
 
-
-        if (Session::get('username')) {
-
-            $Article = Model_Article::find($id);
-            $User = Model_User::find(Session::get('user_id'));
-            $Comment = new Model_Comment();
-            $Comment->content = Input::post('content');
-            $Comment->user = $User;
-            $Comment->article = $Article;
-            $Comment->save();
-            Response::redirect('articles/view/' . $id);
-
-        } else {
-            Response::redirect('auth/login/');
-        }
+        $Article = Model_Article::find($id);
+        $User = Model_User::find(Session::get('user_id'));
+        $Comment = new Model_Comment();
+        $Comment->content = Input::post('content');
+        $Comment->user = $User;
+        $Comment->article = $Article;
+        $Comment->save();
+        Response::redirect('articles/view/' . $id);
 
     }
 

@@ -29,3 +29,5 @@ if (Session::get_flash('success')) : ?>
 
     <?php endforeach; ?>
 </section>
+<script type="application/javascript">
+</script>

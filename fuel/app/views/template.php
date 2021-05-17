@@ -11,6 +11,9 @@ use Fuel\Core\Session;
     <title><?=  $title?></title>
     <?= Asset::css('bootstrap.css')?>
     <?= Asset::css('style.css')?>
+    <?= Asset::css('datatable.css')?>
+    <?= Asset::js('jQuery.js') ?>
+    <?= Asset::js('dataTable.js') ?>
 </head>
 <body>
     <nav class="navbar navbar-expand-lg navbar-light bg-light">
